@@ -1,60 +1,77 @@
+import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 
-players = {}
+# Enable logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
+)
 
-def get_status(user_id):
-    stats = players.get(user_id, {"level": 1, "xp": 0, "coins": 0})
-    return f"🔼 Level: {stats['level']}   💰 Coins: {stats['coins']}   ⭐ XP: {stats['xp']}"
+# Game status (in-memory for now)
+player_data = {}
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    player_data[user_id] = {'level': 1, 'coins': 0, 'xp': 0}
+    
+    await update.message.reply_text(
+        f"🌴 Welcome to Jungle Safari, {update.effective_user.first_name}!\n"
+        f"⭐ Level: 1   💰 Coins: 0   🔥 XP: 0",
+        reply_markup=main_menu()
+    )
 
 def main_menu():
     buttons = [
         [InlineKeyboardButton("🎮 Start Adventure", callback_data="start_adventure")],
         [InlineKeyboardButton("🍍 Collect", callback_data="collect"),
          InlineKeyboardButton("🔍 Explore", callback_data="explore"),
-         InlineKeyboardButton("🎒 Inventory", callback_data="inventory")]
+         InlineKeyboardButton("🎒 Inventory", callback_data="inventory")],
     ]
     return InlineKeyboardMarkup(buttons)
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    players[user_id] = {"level": 1, "xp": 0, "coins": 0}
-    await update.message.reply_text(
-        f"{get_status(user_id)}\n\n🌴 Welcome to Jungle Safari! 🐾\nYour wild journey begins here...",
-        reply_markup=main_menu()
-    )
-
-async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     user_id = query.from_user.id
-
-    if user_id not in players:
-        players[user_id] = {"level": 1, "xp": 0, "coins": 0}
-
-    stats = players[user_id]
+    data = player_data.get(user_id, {'level': 1, 'coins': 0, 'xp': 0})
 
     if query.data == "start_adventure":
-        stats["xp"] += 10
+        data['xp'] += 10
+        response = "🚶‍♂️ You venture into the jungle... +10 XP!"
     elif query.data == "collect":
-        stats["coins"] += 5
+        data['coins'] += 5
+        response = "🍌 You collected jungle fruits! +5 Coins!"
     elif query.data == "explore":
-        stats["xp"] += 5
+        data['xp'] += 5
+        response = "🔍 You explored deep into the trees! +5 XP!"
     elif query.data == "inventory":
-        await query.edit_message_text("🎒 Inventory: Empty (coming soon!)", reply_markup=main_menu())
-        return
+        response = (
+            f"🎒 Your Inventory:\n"
+            f"⭐ Level: {data['level']}\n"
+            f"💰 Coins: {data['coins']}\n"
+            f"🔥 XP: {data['xp']}"
+        )
+    else:
+        response = "🤔 Unknown action."
 
-    if stats["xp"] >= 100:
-        stats["level"] += 1
-        stats["xp"] = 0
+    # Level up
+    if data['xp'] >= 100:
+        data['xp'] -= 100
+        data['level'] += 1
+        response += f"\n🎉 You leveled up to Level {data['level']}!"
 
-    players[user_id] = stats
     await query.edit_message_text(
-        f"{get_status(user_id)}\n\n🌴 Welcome to Jungle Safari! 🐾\nYour wild journey begins here...",
+        text=f"{response}\n\n⭐ Level: {data['level']}   💰 Coins: {data['coins']}   🔥 XP: {data['xp']}",
         reply_markup=main_menu()
     )
 
-app = ApplicationBuilder().token("8486321938:AAHVG6pHBIAwhuvwzpeVuvxBas_mGgm_VGg").build()
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CallbackQueryHandler(handle_button))
-app.run_polling()
+if __name__ == '__main__':
+    import os
+    TOKEN = os.environ.get("8486321938:AAHVG6pHBIAwhuvwzpeVuvxBas_mGgm_VGg")
+    app = ApplicationBuilder().token(TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(button_handler))
+
+    print("Bot is running...")
+    app.run_polling()
