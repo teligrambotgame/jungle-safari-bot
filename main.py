@@ -67,7 +67,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 if __name__ == '__main__':
     import os
-    TOKEN = os.environ.get("8486321938:AAHVG6pHBIAwhuvwzpeVuvxBas_mGgm_VGg")
+    TOKEN = os.environ.get("8486321938:AAHmFKuoHE97vk7cbOLPE6nB1q2nbhZtAwk")
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
