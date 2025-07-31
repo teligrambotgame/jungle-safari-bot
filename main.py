@@ -54,7 +54,7 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=main_menu()
     )
 
-app = ApplicationBuilder().token("YOUR_BOT_TOKEN").build()
+app = ApplicationBuilder().token("8486321938:AAHVG6pHBIAwhuvwzpeVuvxBas_mGgm_VGg").build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CallbackQueryHandler(handle_button))
 app.run_polling()
